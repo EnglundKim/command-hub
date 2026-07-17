@@ -45,7 +45,7 @@ body {
 }
 
 .site-header__brand span {
-  color: var(--color-gold);
+  color: var(--color-text);
 }
 
 .site-nav {

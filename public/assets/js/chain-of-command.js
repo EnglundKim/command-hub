@@ -6,22 +6,7 @@
    =================================================================== */
 
 const DATA_URL = "/api/hierarchy";
-
-const RANK_ICONS = {
-  "O-1": "assets/img/ranks/o1-2ndlt.png",
-  "O-2": "assets/img/ranks/o2-1stlt.png",
-  "O-3": "assets/img/ranks/o3-capt.png",
-  "O-4": "assets/img/ranks/o4-major.png",
-  "O-5": "assets/img/ranks/o5-ltcol.png",
-  "O-6": "assets/img/ranks/o6-colonel.png",
-  "O-7": "assets/img/ranks/o7-briggen.png",
-  "O-8": "assets/img/ranks/o8-majgen.png",
-  "O-9": "assets/img/ranks/o9-ltgen.png",
-  "CW-2": "assets/img/ranks/cw2-cwo2.png",
-  "CW-3": "assets/img/ranks/cw3-cwo3.png",
-  "CW-4": "assets/img/ranks/cw4-cwo4.png",
-  "CW-5": "assets/img/ranks/cw5-cwo5.png",
-};
+// RANK_ICONS comes from assets/js/ranks.js (loaded before this script)
 
 function el(tag, attrs = {}, children = []) {
   const node = document.createElement(tag);

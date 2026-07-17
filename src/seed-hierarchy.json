@@ -2,43 +2,124 @@
   "regiment": {
     "label": "Regiment",
     "positions": [
-      { "rank": "O-9", "title": "Lieutenant General", "status": "closed" },
-      { "rank": "O-8", "title": "Major General", "name": "MajGen Hombrger", "status": "filled" },
-      { "rank": "O-7", "title": "Brigadier General", "name": "BGen Kenobi", "status": "filled" },
-      { "rank": "O-6", "title": "Colonel", "name": "Col Connie", "status": "filled" },
-      { "rank": "O-6", "title": "Colonel", "name": "Col Curry", "status": "filled" }
+      {
+        "rank": "O-9",
+        "title": "Lieutenant General",
+        "status": "closed"
+      },
+      {
+        "rank": "O-8",
+        "title": "Major General",
+        "name": "Hombrger",
+        "status": "filled"
+      },
+      {
+        "rank": "O-7",
+        "title": "Brigadier General",
+        "name": "Kenobi",
+        "status": "filled"
+      },
+      {
+        "rank": "O-6",
+        "title": "Colonel",
+        "name": "Connie",
+        "status": "filled"
+      },
+      {
+        "rank": "O-6",
+        "title": "Colonel",
+        "name": "Curry",
+        "status": "filled"
+      }
     ]
   },
-
   "battalions": [
     {
       "id": "bn-1",
       "label": "Battalion I",
       "positions": [
-        { "rank": "O-5", "title": "Lieutenant Colonel", "name": "LtCol Yukki", "status": "filled" },
-        { "rank": "O-4", "title": "Major", "name": "Maj SpaceBall", "status": "filled" }
+        {
+          "rank": "O-5",
+          "title": "Lieutenant Colonel",
+          "name": "Yukki",
+          "status": "filled"
+        },
+        {
+          "rank": "O-4",
+          "title": "Major",
+          "name": "SpaceBall",
+          "status": "filled"
+        }
       ],
       "companies": [
         {
           "id": "bn1-co-1",
           "label": "Company I",
           "positions": [
-            { "rank": "O-3", "title": "Captain", "name": "Capt Alex", "status": "filled" },
-            { "rank": "O-2", "title": "1st Lieutenant", "name": "1Lt Massa", "status": "filled" },
-            { "rank": "O-2", "title": "1st Lieutenant", "name": "2Lt Skeletonpilot", "status": "filled" },
-            { "rank": "O-1", "title": "2nd Lieutenant", "name": "2Lt Mizer", "status": "filled" },
-            { "rank": "O-1", "title": "2nd Lieutenant", "status": "vacant" }
+            {
+              "rank": "O-3",
+              "title": "Captain",
+              "name": "Alex",
+              "status": "filled"
+            },
+            {
+              "rank": "O-2",
+              "title": "1st Lieutenant",
+              "name": "Massa",
+              "status": "filled"
+            },
+            {
+              "rank": "O-2",
+              "title": "1st Lieutenant",
+              "name": "Skeletonpilot",
+              "status": "filled"
+            },
+            {
+              "rank": "O-1",
+              "title": "2nd Lieutenant",
+              "name": "Mizer",
+              "status": "filled"
+            },
+            {
+              "rank": "O-1",
+              "title": "2nd Lieutenant",
+              "status": "vacant"
+            }
           ]
         },
         {
           "id": "bn1-co-2",
           "label": "Company II",
           "positions": [
-            { "rank": "O-3", "title": "Captain", "name": "Capt Gatto", "status": "filled" },
-            { "rank": "O-1", "title": "2nd Lieutenant", "name": "2Lt Eli", "status": "filled" },
-            { "rank": "O-1", "title": "2nd Lieutenant", "name": "2Lt x2Hello", "status": "filled" },
-            { "rank": "O-1", "title": "2nd Lieutenant", "name": "2Lt Hammad", "status": "filled" },
-            { "rank": "O-1", "title": "2nd Lieutenant", "status": "vacant" }
+            {
+              "rank": "O-3",
+              "title": "Captain",
+              "name": "Gatto",
+              "status": "filled"
+            },
+            {
+              "rank": "O-1",
+              "title": "2nd Lieutenant",
+              "name": "Eli",
+              "status": "filled"
+            },
+            {
+              "rank": "O-1",
+              "title": "2nd Lieutenant",
+              "name": "x2Hello",
+              "status": "filled"
+            },
+            {
+              "rank": "O-1",
+              "title": "2nd Lieutenant",
+              "name": "Hammad",
+              "status": "filled"
+            },
+            {
+              "rank": "O-1",
+              "title": "2nd Lieutenant",
+              "status": "vacant"
+            }
           ]
         }
       ]
@@ -47,49 +128,127 @@
       "id": "bn-2",
       "label": "Battalion II",
       "positions": [
-        { "rank": "O-5", "title": "Lieutenant Colonel", "status": "closed" },
-        { "rank": "O-4", "title": "Major", "status": "closed" }
+        {
+          "rank": "O-5",
+          "title": "Lieutenant Colonel",
+          "status": "closed"
+        },
+        {
+          "rank": "O-4",
+          "title": "Major",
+          "status": "closed"
+        }
       ],
       "companies": [
         {
           "id": "bn2-co-1",
           "label": "Company III",
           "positions": [
-            { "rank": "O-3", "title": "Captain", "status": "closed" },
-            { "rank": "O-1", "title": "2nd Lieutenant", "status": "closed" },
-            { "rank": "O-1", "title": "2nd Lieutenant", "status": "closed" },
-            { "rank": "O-1", "title": "2nd Lieutenant", "status": "closed" },
-            { "rank": "O-1", "title": "2nd Lieutenant", "status": "closed" }
+            {
+              "rank": "O-3",
+              "title": "Captain",
+              "status": "closed"
+            },
+            {
+              "rank": "O-1",
+              "title": "2nd Lieutenant",
+              "status": "closed"
+            },
+            {
+              "rank": "O-1",
+              "title": "2nd Lieutenant",
+              "status": "closed"
+            },
+            {
+              "rank": "O-1",
+              "title": "2nd Lieutenant",
+              "status": "closed"
+            },
+            {
+              "rank": "O-1",
+              "title": "2nd Lieutenant",
+              "status": "closed"
+            }
           ]
         },
         {
           "id": "bn2-co-2",
           "label": "Company IV",
           "positions": [
-            { "rank": "O-3", "title": "Captain", "status": "closed" },
-            { "rank": "O-1", "title": "2nd Lieutenant", "status": "closed" },
-            { "rank": "O-1", "title": "2nd Lieutenant", "status": "closed" },
-            { "rank": "O-1", "title": "2nd Lieutenant", "status": "closed" },
-            { "rank": "O-1", "title": "2nd Lieutenant", "status": "closed" }
+            {
+              "rank": "O-3",
+              "title": "Captain",
+              "status": "closed"
+            },
+            {
+              "rank": "O-1",
+              "title": "2nd Lieutenant",
+              "status": "closed"
+            },
+            {
+              "rank": "O-1",
+              "title": "2nd Lieutenant",
+              "status": "closed"
+            },
+            {
+              "rank": "O-1",
+              "title": "2nd Lieutenant",
+              "status": "closed"
+            },
+            {
+              "rank": "O-1",
+              "title": "2nd Lieutenant",
+              "status": "closed"
+            }
           ]
         }
       ]
     }
   ],
-
   "warrantOfficers": {
     "label": "Warrant Officers",
     "positions": [
-      { "rank": "CW-5", "title": "Chief Warrant Officer 5", "name": "CWO5 Voske", "status": "filled" },
-      { "rank": "CW-4", "title": "Chief Warrant Officer 4", "name": "CWO4 Landosnow", "status": "filled" },
-      { "rank": "CW-3", "title": "Chief Warrant Officer 3", "name": "CWO3 Alysius", "status": "filled" },
-      { "rank": "CW-2", "title": "Chief Warrant Officer 2", "name": "CWO2 Bluejay", "status": "filled" },
-      { "rank": "WO-1", "title": "Warrant Officer 1", "name": "WO1 Bananas", "status": "filled" }
+      {
+        "rank": "CW-5",
+        "title": "Chief Warrant Officer 5",
+        "name": "Voske",
+        "status": "filled"
+      },
+      {
+        "rank": "CW-4",
+        "title": "Chief Warrant Officer 4",
+        "name": "Landosnow",
+        "status": "filled"
+      },
+      {
+        "rank": "CW-3",
+        "title": "Chief Warrant Officer 3",
+        "name": "Alysius",
+        "status": "filled"
+      },
+      {
+        "rank": "CW-2",
+        "title": "Chief Warrant Officer 2",
+        "name": "Bluejay",
+        "status": "filled"
+      },
+      {
+        "rank": "WO-1",
+        "title": "Warrant Officer 1",
+        "name": "Bananas",
+        "status": "filled"
+      }
     ]
   },
-
   "reserves": {
-    "label": "Reserves (ELOA)",
-    "members": ["Maj Dedsec"]
+    "label": "Reserves",
+    "positions": [
+      {
+        "rank": "O-4",
+        "title": "",
+        "name": "Dedsec",
+        "status": "filled"
+      }
+    ]
   }
 }

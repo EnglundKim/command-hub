@@ -158,8 +158,21 @@
   font-size: var(--fs-sm);
 }
 
-.editor-row input[data-field="rank"] {
-  width: 70px;
+.editor-rank-field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.editor-rank-preview {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.editor-row select[data-field="rank"] {
+  width: 90px;
 }
 
 .editor-row input[data-field="title"] {

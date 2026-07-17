@@ -99,13 +99,39 @@ function renderEditor() {
   container.appendChild(renderReserves());
 }
 
-function renderPositionsList(positions, onChange) {
+function rankSelectWithPreview(pos) {
+  const preview = el("img", { class: "editor-rank-preview", src: RANK_ICONS[pos.rank] || "", alt: "" });
+  preview.style.visibility = RANK_ICONS[pos.rank] ? "visible" : "hidden";
+
+  const select = el(
+    "select",
+    {
+      "data-field": "rank",
+      onchange: (e) => {
+        pos.rank = e.target.value;
+        const iconSrc = RANK_ICONS[pos.rank];
+        preview.src = iconSrc || "";
+        preview.style.visibility = iconSrc ? "visible" : "hidden";
+      },
+    },
+    [
+      el("option", { value: "", text: "—", selected: !pos.rank ? "selected" : null }),
+      ...RANKS.map((r) =>
+        el("option", { value: r.code, text: r.code, selected: pos.rank === r.code ? "selected" : null })
+      ),
+    ]
+  );
+
+  return el("span", { class: "editor-rank-field" }, [preview, select]);
+}
+
+function renderPositionsList(positions) {
   const wrap = el("div", {});
   positions.forEach((pos, i) => {
     const nameInput = el("input", {
       type: "text",
       "data-field": "name",
-      placeholder: "Name",
+      placeholder: "Name (no rank prefix)",
       value: pos.name || "",
       oninput: (e) => {
         pos.name = e.target.value;
@@ -129,15 +155,7 @@ function renderPositionsList(positions, onChange) {
 
     wrap.appendChild(
       el("div", { class: "editor-row" }, [
-        el("input", {
-          type: "text",
-          "data-field": "rank",
-          placeholder: "Rank",
-          value: pos.rank || "",
-          oninput: (e) => {
-            pos.rank = e.target.value;
-          },
-        }),
+        rankSelectWithPreview(pos),
         el("input", {
           type: "text",
           "data-field": "title",
@@ -283,42 +301,9 @@ function renderWarrantOfficers() {
 }
 
 function renderReserves() {
-  const list = el("div", {});
-  hierarchyData.reserves.members.forEach((name, i) => {
-    list.appendChild(
-      el("div", { class: "editor-row" }, [
-        el("input", {
-          type: "text",
-          value: name,
-          oninput: (e) => {
-            hierarchyData.reserves.members[i] = e.target.value;
-          },
-        }),
-        el("button", {
-          class: "admin-btn admin-btn--danger admin-btn--small",
-          text: "Remove",
-          onclick: () => {
-            hierarchyData.reserves.members.splice(i, 1);
-            renderEditor();
-          },
-        }),
-      ])
-    );
-  });
-  list.appendChild(
-    el("button", {
-      class: "admin-btn admin-btn--small",
-      text: "+ Add Reservist",
-      onclick: () => {
-        hierarchyData.reserves.members.push("");
-        renderEditor();
-      },
-    })
-  );
-
   return el("div", { class: "editor-unit" }, [
-    el("div", { class: "editor-unit__header" }, [el("strong", { text: "Reserves (ELOA)" })]),
-    list,
+    el("div", { class: "editor-unit__header" }, [el("strong", { text: "Reserves" })]),
+    renderPositionsList(hierarchyData.reserves.positions),
   ]);
 }
 

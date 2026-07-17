@@ -94,11 +94,16 @@
   color: var(--color-text);
 }
 
-.activity-sub {
-  color: var(--color-text-muted);
-  font-size: var(--fs-xs);
+.activity-section-row td {
+  background-color: var(--color-bg-panel-raised);
+  color: var(--color-gold);
+  font-family: var(--font-display);
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.06em;
+  font-size: var(--fs-sm);
+  text-align: left;
+  border-bottom: 2px solid var(--color-gold);
 }
 
 .activity-cell {

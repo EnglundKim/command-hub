@@ -25,13 +25,6 @@ const RATE_TARGETS = {
   lieutenant: [],
 };
 
-const VISIBLE_GROUPS = {
-  regimental: ["battalion", "captain", "lieutenant"],
-  battalion: ["battalion", "captain", "lieutenant"],
-  captain: ["captain", "lieutenant"],
-  lieutenant: ["captain", "lieutenant"],
-};
-
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -468,9 +461,11 @@ async function apiGetActivity(request, env, url) {
 
   const positions = flattenPositions(data);
   const positionMap = new Map(positions.map((p) => [p.id, p]));
+  // Hierarchy order (regiment, then each battalion followed by its companies) — rows are
+  // sorted to match this so the grid can be sectioned by unit in a sensible reading order.
+  const positionOrder = new Map(positions.map((p, i) => [p.id, i]));
 
   const viewerGroup = await resolveViewerGroup(env, officer);
-  const visible = VISIBLE_GROUPS[viewerGroup] || [];
 
   const { results: activeOfficers } = await env.DB
     .prepare(
@@ -481,9 +476,8 @@ async function apiGetActivity(request, env, url) {
   const rows = [];
   for (const o of activeOfficers) {
     const pos = positionMap.get(o.current_position_id);
-    if (!pos || pos.parentType === "regiment") continue; // regimental seats are never rated
+    if (!pos) continue;
     const group = rankGroup(pos.rank);
-    if (!visible.includes(group)) continue;
 
     const { results: weekRatings } = await env.DB
       .prepare(
@@ -507,11 +501,16 @@ async function apiGetActivity(request, env, url) {
       rank: pos.rank,
       title: pos.title,
       unitLabel: pos.unitLabel,
+      section: pos.parentType === "regiment" ? "Regimental Command" : pos.unitLabel,
       ratings: ratingsByWeek,
       qtrAvg,
       canRate: o.id !== officer.id && canRate(viewerGroup, group),
+      _order: positionOrder.get(pos.id) ?? 0,
     });
   }
+
+  rows.sort((a, b) => a._order - b._order);
+  rows.forEach((r) => delete r._order);
 
   return jsonResponse({ weeks, rows, quarterLabel: qLabel, currentWeek: isoDate(mondayOf(now)) });
 }

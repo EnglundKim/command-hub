@@ -94,6 +94,19 @@ function renderGrid() {
     return;
   }
 
+  const colCount = activityData.weeks.length + 2;
+  const bodyRows = [];
+  let lastSection = null;
+  activityData.rows.forEach((row) => {
+    if (row.section !== lastSection) {
+      bodyRows.push(
+        el("tr", { class: "activity-section-row" }, [el("td", { colspan: String(colCount), text: row.section })])
+      );
+      lastSection = row.section;
+    }
+    bodyRows.push(renderRow(row));
+  });
+
   const table = el("table", { class: "activity-table" }, [
     el("thead", {}, [
       el("tr", {}, [
@@ -102,7 +115,7 @@ function renderGrid() {
         el("th", { text: `Qtr Avg (${activityData.quarterLabel})` }),
       ]),
     ]),
-    el("tbody", {}, activityData.rows.map(renderRow)),
+    el("tbody", {}, bodyRows),
   ]);
 
   root.appendChild(table);
@@ -111,10 +124,7 @@ function renderGrid() {
 function renderRow(row) {
   const nameCell = el("td", { class: "activity-name-cell" }, [
     RANK_ICONS[row.rank] ? el("img", { class: "coc-row__insignia", src: RANK_ICONS[row.rank], alt: row.rank }) : null,
-    el("div", {}, [
-      el("div", { class: "activity-name", text: row.displayName }),
-      el("div", { class: "activity-sub", text: `${row.unitLabel} — ${row.title}` }),
-    ]),
+    el("div", { class: "activity-name", text: `${row.title} - ${row.displayName}` }),
   ]);
 
   const weekCells = activityData.weeks.map((week) => {

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Activity Report | 5th Marine Regiment Command Hub</title>
+  <link rel="stylesheet" href="assets/css/variables.css" />
+  <link rel="stylesheet" href="assets/css/base.css" />
+  <link rel="stylesheet" href="assets/css/layout.css" />
+  <link rel="stylesheet" href="assets/css/auth.css" />
+  <link rel="stylesheet" href="assets/css/admin.css" />
+  <link rel="stylesheet" href="assets/css/activity.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header__brand">
+      <img class="site-header__logo" src="assets/img/logo.png" alt="5th Marine Regiment crest" />
+      5th Marine Regiment <span>Command Hub</span>
+    </div>
+    <nav>
+      <ul class="site-nav">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="chain-of-command.html">Chain of Command</a></li>
+        <li><a href="activity-report.html" aria-current="page">Activity Report</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="page-shell">
+    <h1 class="page-title">Activity Report</h1>
+
+    <div class="activity-legend">
+      <span class="activity-legend__item"><span class="activity-legend__swatch" style="background:#3aa655"></span>5 — Exemplary</span>
+      <span class="activity-legend__item"><span class="activity-legend__swatch" style="background:#8bc34a"></span>4 — Impressive</span>
+      <span class="activity-legend__item"><span class="activity-legend__swatch" style="background:#f6c343"></span>3 — Consistent</span>
+      <span class="activity-legend__item"><span class="activity-legend__swatch" style="background:#f0973b"></span>2 — Moderate</span>
+      <span class="activity-legend__item"><span class="activity-legend__swatch" style="background:#e2683a"></span>1 — Poor</span>
+      <span class="activity-legend__item"><span class="activity-legend__swatch" style="background:#e5484d"></span>0 — Inactive</span>
+      <span class="activity-legend__item"><span class="activity-legend__swatch" style="background:#ebae46"></span>LOA — Leave of Absence</span>
+    </div>
+
+    <div class="activity-nav">
+      <button id="prev-month" class="admin-btn admin-btn--small">&larr; Previous</button>
+      <span id="month-label" class="activity-nav__label"></span>
+      <button id="next-month" class="admin-btn admin-btn--small">Next &rarr;</button>
+    </div>
+
+    <div class="activity-table-scroll">
+      <div id="activity-root">Loading&hellip;</div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    5th Marine Regiment Command Hub
+  </footer>
+
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/nav.js"></script>
+  <script src="assets/js/ranks.js"></script>
+  <script src="assets/js/activity-report.js"></script>
+</body>
+</html>

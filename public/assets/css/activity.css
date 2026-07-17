@@ -1,0 +1,125 @@
+/* ===================================================================
+   ACTIVITY REPORT
+   =================================================================== */
+
+.activity-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-5);
+  margin-bottom: var(--space-5);
+}
+
+.activity-nav__label {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-gold-bright);
+  font-size: var(--fs-md);
+  min-width: 200px;
+  text-align: center;
+}
+
+.activity-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: center;
+  margin-bottom: var(--space-6);
+}
+
+.activity-legend__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+}
+
+.activity-legend__swatch {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  display: inline-block;
+}
+
+.activity-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.activity-table {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+  background-color: var(--color-bg-panel);
+  border: 1px solid var(--color-border);
+  font-size: var(--fs-sm);
+}
+
+.activity-table th {
+  background-color: var(--color-bg-panel-raised);
+  color: var(--color-gold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.activity-table td {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  text-align: center;
+}
+
+.activity-name-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  text-align: left;
+}
+
+.activity-name {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.activity-sub {
+  color: var(--color-text-muted);
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.activity-cell {
+  display: inline-block;
+  min-width: 36px;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius);
+  color: #16191f;
+  font-weight: 700;
+}
+
+.activity-cell--empty {
+  background: transparent;
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+.activity-select {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--space-1) var(--space-2);
+  font-weight: 700;
+  color: #16191f;
+  background-color: var(--color-bg-panel-raised);
+}
+
+.activity-avg {
+  font-family: var(--font-display);
+  color: var(--color-gold-bright);
+  font-weight: 700;
+}

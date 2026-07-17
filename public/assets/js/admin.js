@@ -11,6 +11,34 @@ function el(tag, attrs = {}, children = []) {
   return node;
 }
 
+let positionsCache = [];
+
+async function loadPositions() {
+  const { positions } = await apiFetch("/api/positions");
+  positionsCache = positions;
+  return positions;
+}
+
+function positionLabel(p) {
+  return `${p.unitLabel} — [${p.rank}] ${p.title}`;
+}
+
+function seatSelect(currentPositionId, excludeOfficerId) {
+  const available = positionsCache.filter(
+    (p) => !p.closed && (!p.occupant || p.occupant.officerId === excludeOfficerId)
+  );
+  return el(
+    "select",
+    { id: "seat-picker" },
+    [
+      el("option", { value: "", text: "— No seat —" }),
+      ...available.map((p) =>
+        el("option", { value: p.id, text: positionLabel(p), selected: p.id === currentPositionId ? "selected" : null })
+      ),
+    ]
+  );
+}
+
 /* ---------------- Officers ---------------- */
 
 async function loadOfficers() {
@@ -18,31 +46,75 @@ async function loadOfficers() {
   const body = document.getElementById("officers-body");
   body.innerHTML = "";
   try {
+    await loadPositions();
     const { officers } = await apiFetch("/api/officers");
+    const positionById = new Map(positionsCache.map((p) => [p.id, p]));
+
     officers.forEach((o) => {
-      body.appendChild(
-        el("tr", {}, [
-          el("td", { text: o.username }),
-          el("td", { text: o.email }),
-          el("td", { text: o.tier.replace("_", " ") }),
-          el("td", { text: o.created_at }),
-          el("td", {}, [
-            el("button", {
-              class: "admin-btn admin-btn--danger admin-btn--small",
-              text: "Remove",
-              onclick: () => removeOfficer(o.id, o.username),
-            }),
-          ]),
-        ])
-      );
+      const seat = o.current_position_id ? positionById.get(o.current_position_id) : null;
+      const row = el("tr", {}, [
+        el("td", { text: o.display_name || o.username }),
+        el("td", { text: o.username }),
+        el("td", { text: o.email }),
+        el("td", { text: o.tier.replace("_", " ") }),
+        el("td", { text: seat ? positionLabel(seat) : "Unassigned" }),
+        el("td", {}, [
+          el("button", {
+            class: "admin-btn admin-btn--small",
+            text: "Reassign",
+            onclick: () => startReassign(row, o),
+          }),
+          el("button", {
+            class: "admin-btn admin-btn--danger admin-btn--small",
+            text: "Remove",
+            onclick: () => removeOfficer(o.id, o.username),
+          }),
+        ]),
+      ]);
+      body.appendChild(row);
     });
   } catch (err) {
     callout.appendChild(el("div", { class: "auth-message auth-message--error", text: err.message }));
   }
 }
 
+function startReassign(row, officer) {
+  const existing = row.querySelector(".reassign-row");
+  if (existing) {
+    existing.remove();
+    return;
+  }
+  const select = seatSelect(officer.current_position_id, officer.id);
+  const confirmBtn = el("button", {
+    class: "admin-btn admin-btn--primary admin-btn--small",
+    text: "Confirm",
+    onclick: async () => {
+      try {
+        await apiFetch(`/api/officers/${officer.id}/assign`, {
+          method: "POST",
+          body: { positionId: select.value || null },
+        });
+        loadOfficers();
+      } catch (err) {
+        alert(err.message);
+      }
+    },
+  });
+  const tr = el("tr", { class: "reassign-row" }, [
+    el("td", { colspan: "6" }, [
+      el("div", { class: "editor-row" }, [select, confirmBtn]),
+    ]),
+  ]);
+  row.after(tr);
+}
+
 async function removeOfficer(id, username) {
-  if (!confirm(`Remove officer "${username}"? This can't be undone.`)) return;
+  if (
+    !confirm(
+      `Deactivate "${username}"? They'll no longer be able to log in and their seat becomes vacant, but every rating they gave or received stays on record.`
+    )
+  )
+    return;
   try {
     await apiFetch(`/api/officers/${id}`, { method: "DELETE" });
     loadOfficers();
@@ -57,14 +129,21 @@ document.getElementById("add-officer-form").addEventListener("submit", async (e)
   callout.innerHTML = "";
 
   const username = document.getElementById("new-username").value.trim();
+  const displayName = document.getElementById("new-display-name").value.trim();
   const email = document.getElementById("new-email").value.trim();
   const tier = document.getElementById("new-tier").value;
+  const positionId = document.getElementById("new-seat").value || null;
 
   try {
-    const res = await apiFetch("/api/officers", { method: "POST", body: { username, email, tier } });
+    const res = await apiFetch("/api/officers", {
+      method: "POST",
+      body: { username, displayName, email, tier, positionId },
+    });
     callout.appendChild(
       el("div", { class: "admin-callout" }, [
-        document.createTextNode(`Account created. Temporary password (share this with ${username} — it won't be shown again): `),
+        document.createTextNode(
+          `Account created. Temporary password (share this with ${username} — it won't be shown again): `
+        ),
         el("code", { text: res.tempPassword }),
       ])
     );
@@ -74,6 +153,16 @@ document.getElementById("add-officer-form").addEventListener("submit", async (e)
     callout.appendChild(el("div", { class: "auth-message auth-message--error", text: err.message }));
   }
 });
+
+async function populateNewOfficerSeats() {
+  await loadPositions();
+  const select = document.getElementById("new-seat");
+  select.innerHTML = "";
+  select.appendChild(el("option", { value: "", text: "— No seat yet —" }));
+  positionsCache
+    .filter((p) => !p.closed && !p.occupant)
+    .forEach((p) => select.appendChild(el("option", { value: p.id, text: positionLabel(p) })));
+}
 
 /* ---------------- Hierarchy editor ---------------- */
 
@@ -99,7 +188,7 @@ function renderEditor() {
   container.appendChild(renderReserves());
 }
 
-function rankSelectWithPreview(pos) {
+function rankSelectWithPreview(pos, onChange) {
   const preview = el("img", { class: "editor-rank-preview", src: RANK_ICONS[pos.rank] || "", alt: "" });
   preview.style.visibility = RANK_ICONS[pos.rank] ? "visible" : "hidden";
 
@@ -112,6 +201,7 @@ function rankSelectWithPreview(pos) {
         const iconSrc = RANK_ICONS[pos.rank];
         preview.src = iconSrc || "";
         preview.style.visibility = iconSrc ? "visible" : "hidden";
+        if (onChange) onChange();
       },
     },
     [
@@ -125,7 +215,60 @@ function rankSelectWithPreview(pos) {
   return el("span", { class: "editor-rank-field" }, [preview, select]);
 }
 
-function renderPositionsList(positions) {
+// Regiment/Battalion/Company positions: structure only — rank, title, closed.
+// Who occupies a seat is managed from the Officers section, not here.
+function renderStructurePositionsList(positions, idPrefix) {
+  const wrap = el("div", {});
+  positions.forEach((pos, i) => {
+    wrap.appendChild(
+      el("div", { class: "editor-row" }, [
+        rankSelectWithPreview(pos),
+        el("input", {
+          type: "text",
+          "data-field": "title",
+          placeholder: "Title",
+          value: pos.title || "",
+          oninput: (e) => {
+            pos.title = e.target.value;
+          },
+        }),
+        el("label", { class: "editor-checkbox" }, [
+          el("input", {
+            type: "checkbox",
+            checked: pos.closed ? "checked" : null,
+            onchange: (e) => {
+              pos.closed = e.target.checked;
+            },
+          }),
+          el("span", { text: "Closed" }),
+        ]),
+        el("button", {
+          class: "admin-btn admin-btn--danger admin-btn--small",
+          text: "Remove",
+          onclick: () => {
+            positions.splice(i, 1);
+            renderEditor();
+          },
+        }),
+      ])
+    );
+  });
+
+  wrap.appendChild(
+    el("button", {
+      class: "admin-btn admin-btn--small",
+      text: "+ Add Position",
+      onclick: () => {
+        positions.push({ id: `${idPrefix}-pos-${Date.now()}`, rank: "", title: "", closed: false });
+        renderEditor();
+      },
+    })
+  );
+  return wrap;
+}
+
+// Warrant Officers / Reserves: unchanged, still directly-typed name + status.
+function renderNamedPositionsList(positions) {
   const wrap = el("div", {});
   positions.forEach((pos, i) => {
     const nameInput = el("input", {
@@ -195,7 +338,7 @@ function renderPositionsList(positions) {
 function renderRegiment() {
   return el("div", { class: "editor-unit" }, [
     el("div", { class: "editor-unit__header" }, [el("strong", { text: "Regiment" })]),
-    renderPositionsList(hierarchyData.regiment.positions),
+    renderStructurePositionsList(hierarchyData.regiment.positions, "reg"),
   ]);
 }
 
@@ -218,7 +361,7 @@ function renderCompany(company, battalion) {
         },
       }),
     ]),
-    renderPositionsList(company.positions),
+    renderStructurePositionsList(company.positions, company.id),
   ]);
 }
 
@@ -246,7 +389,7 @@ function renderBattalions() {
           },
         }),
       ]),
-      renderPositionsList(battalion.positions),
+      renderStructurePositionsList(battalion.positions, battalion.id),
       el(
         "div",
         { class: "editor-companies" },
@@ -257,11 +400,12 @@ function renderBattalions() {
           class: "admin-btn admin-btn--small",
           text: "+ Add Company",
           onclick: () => {
+            const newId = `co-${Date.now()}`;
             battalion.companies = battalion.companies || [];
             battalion.companies.push({
-              id: `co-${Date.now()}`,
+              id: newId,
               label: "New Company",
-              positions: [{ rank: "O-3", title: "Captain", status: "vacant" }],
+              positions: [{ id: `${newId}-pos-1`, rank: "O-3", title: "Captain", closed: false }],
             });
             renderEditor();
           },
@@ -276,12 +420,13 @@ function renderBattalions() {
       class: "admin-btn admin-btn--small",
       text: "+ Add Battalion",
       onclick: () => {
+        const newId = `bn-${Date.now()}`;
         hierarchyData.battalions.push({
-          id: `bn-${Date.now()}`,
+          id: newId,
           label: "New Battalion",
           positions: [
-            { rank: "O-5", title: "Lieutenant Colonel", status: "vacant" },
-            { rank: "O-4", title: "Major", status: "vacant" },
+            { id: `${newId}-pos-1`, rank: "O-5", title: "Lieutenant Colonel", closed: false },
+            { id: `${newId}-pos-2`, rank: "O-4", title: "Major", closed: false },
           ],
           companies: [],
         });
@@ -296,14 +441,14 @@ function renderBattalions() {
 function renderWarrantOfficers() {
   return el("div", { class: "editor-unit" }, [
     el("div", { class: "editor-unit__header" }, [el("strong", { text: "Warrant Officers" })]),
-    renderPositionsList(hierarchyData.warrantOfficers.positions),
+    renderNamedPositionsList(hierarchyData.warrantOfficers.positions),
   ]);
 }
 
 function renderReserves() {
   return el("div", { class: "editor-unit" }, [
     el("div", { class: "editor-unit__header" }, [el("strong", { text: "Reserves" })]),
-    renderPositionsList(hierarchyData.reserves.positions),
+    renderNamedPositionsList(hierarchyData.reserves.positions),
   ]);
 }
 
@@ -324,3 +469,4 @@ document.getElementById("save-hierarchy").addEventListener("click", async () => 
 
 loadOfficers();
 loadHierarchy();
+populateNewOfficerSeats();

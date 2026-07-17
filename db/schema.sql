@@ -9,7 +9,21 @@ CREATE TABLE IF NOT EXISTS officers (
   password_salt TEXT NOT NULL,
   tier TEXT NOT NULL CHECK (tier IN ('regimental_command','battalion_command','company_command')),
   must_reset_password INTEGER NOT NULL DEFAULT 0,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  display_name TEXT,
+  current_position_id TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- One weekly activity rating per officer. '0'..'5' or 'LOA'. Only the current week is ever writable.
+CREATE TABLE IF NOT EXISTS activity_ratings (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  officer_id INTEGER NOT NULL REFERENCES officers(id),
+  week_start TEXT NOT NULL,
+  rating TEXT NOT NULL,
+  rated_by INTEGER NOT NULL REFERENCES officers(id),
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(officer_id, week_start)
 );
 
 CREATE TABLE IF NOT EXISTS sessions (
@@ -44,3 +58,5 @@ CREATE TABLE IF NOT EXISTS hierarchy_history (
 
 CREATE INDEX IF NOT EXISTS idx_sessions_officer ON sessions(officer_id);
 CREATE INDEX IF NOT EXISTS idx_password_resets_officer ON password_resets(officer_id);
+CREATE INDEX IF NOT EXISTS idx_ratings_officer ON activity_ratings(officer_id);
+CREATE INDEX IF NOT EXISTS idx_officers_current_position ON officers(current_position_id);

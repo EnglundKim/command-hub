@@ -20,6 +20,7 @@
       <ul class="site-nav">
         <li><a href="index.html">Home</a></li>
         <li><a href="chain-of-command.html">Chain of Command</a></li>
+        <li><a href="activity-report.html">Activity Report</a></li>
       </ul>
     </nav>
   </header>
@@ -33,13 +34,17 @@
       <div class="admin-table-scroll">
         <table class="admin-table">
           <thead>
-            <tr><th>Username</th><th>Email</th><th>Tier</th><th>Added</th><th></th></tr>
+            <tr><th>Name</th><th>Username</th><th>Email</th><th>Tier</th><th>Seat</th><th></th></tr>
           </thead>
           <tbody id="officers-body"></tbody>
         </table>
       </div>
 
       <form id="add-officer-form" class="admin-form">
+        <div class="auth-field">
+          <label for="new-display-name">Display Name</label>
+          <input type="text" id="new-display-name" placeholder="e.g. Alex" required />
+        </div>
         <div class="auth-field">
           <label for="new-username">Username</label>
           <input type="text" id="new-username" required minlength="3" />
@@ -55,6 +60,10 @@
             <option value="battalion_command">Battalion Command</option>
             <option value="regimental_command">Regimental Command</option>
           </select>
+        </div>
+        <div class="auth-field">
+          <label for="new-seat">Seat</label>
+          <select id="new-seat"></select>
         </div>
         <button type="submit" class="admin-btn admin-btn--primary">Add Officer</button>
       </form>

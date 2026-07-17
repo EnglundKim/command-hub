@@ -5,31 +5,32 @@
       {
         "rank": "O-9",
         "title": "Lieutenant General",
-        "status": "closed"
+        "id": "reg-pos-1",
+        "closed": true
       },
       {
         "rank": "O-8",
         "title": "Major General",
-        "name": "Hombrger",
-        "status": "filled"
+        "id": "reg-pos-2",
+        "closed": false
       },
       {
         "rank": "O-7",
         "title": "Brigadier General",
-        "name": "Kenobi",
-        "status": "filled"
+        "id": "reg-pos-3",
+        "closed": false
       },
       {
         "rank": "O-6",
         "title": "Colonel",
-        "name": "Connie",
-        "status": "filled"
+        "id": "reg-pos-4",
+        "closed": false
       },
       {
         "rank": "O-6",
         "title": "Colonel",
-        "name": "Curry",
-        "status": "filled"
+        "id": "reg-pos-5",
+        "closed": false
       }
     ]
   },
@@ -41,14 +42,14 @@
         {
           "rank": "O-5",
           "title": "Lieutenant Colonel",
-          "name": "Yukki",
-          "status": "filled"
+          "id": "bn-1-pos-1",
+          "closed": false
         },
         {
           "rank": "O-4",
           "title": "Major",
-          "name": "SpaceBall",
-          "status": "filled"
+          "id": "bn-1-pos-2",
+          "closed": false
         }
       ],
       "companies": [
@@ -59,31 +60,32 @@
             {
               "rank": "O-3",
               "title": "Captain",
-              "name": "Alex",
-              "status": "filled"
+              "id": "bn1-co-1-pos-1",
+              "closed": false
             },
             {
               "rank": "O-2",
               "title": "1st Lieutenant",
-              "name": "Massa",
-              "status": "filled"
+              "id": "bn1-co-1-pos-2",
+              "closed": false
             },
             {
               "rank": "O-2",
               "title": "1st Lieutenant",
-              "name": "Skeletonpilot",
-              "status": "filled"
+              "id": "bn1-co-1-pos-3",
+              "closed": false
             },
             {
               "rank": "O-1",
               "title": "2nd Lieutenant",
-              "name": "Mizer",
-              "status": "filled"
+              "id": "bn1-co-1-pos-4",
+              "closed": false
             },
             {
               "rank": "O-1",
               "title": "2nd Lieutenant",
-              "status": "vacant"
+              "id": "bn1-co-1-pos-5",
+              "closed": false
             }
           ]
         },
@@ -94,31 +96,32 @@
             {
               "rank": "O-3",
               "title": "Captain",
-              "name": "Gatto",
-              "status": "filled"
+              "id": "bn1-co-2-pos-1",
+              "closed": false
             },
             {
               "rank": "O-1",
               "title": "2nd Lieutenant",
-              "name": "Eli",
-              "status": "filled"
+              "id": "bn1-co-2-pos-2",
+              "closed": false
             },
             {
               "rank": "O-1",
               "title": "2nd Lieutenant",
-              "name": "x2Hello",
-              "status": "filled"
+              "id": "bn1-co-2-pos-3",
+              "closed": false
             },
             {
               "rank": "O-1",
               "title": "2nd Lieutenant",
-              "name": "Hammad",
-              "status": "filled"
+              "id": "bn1-co-2-pos-4",
+              "closed": false
             },
             {
               "rank": "O-1",
               "title": "2nd Lieutenant",
-              "status": "vacant"
+              "id": "bn1-co-2-pos-5",
+              "closed": false
             }
           ]
         }
@@ -131,12 +134,14 @@
         {
           "rank": "O-5",
           "title": "Lieutenant Colonel",
-          "status": "closed"
+          "id": "bn-2-pos-1",
+          "closed": true
         },
         {
           "rank": "O-4",
           "title": "Major",
-          "status": "closed"
+          "id": "bn-2-pos-2",
+          "closed": true
         }
       ],
       "companies": [
@@ -147,27 +152,32 @@
             {
               "rank": "O-3",
               "title": "Captain",
-              "status": "closed"
+              "id": "bn2-co-1-pos-1",
+              "closed": true
             },
             {
               "rank": "O-1",
               "title": "2nd Lieutenant",
-              "status": "closed"
+              "id": "bn2-co-1-pos-2",
+              "closed": true
             },
             {
               "rank": "O-1",
               "title": "2nd Lieutenant",
-              "status": "closed"
+              "id": "bn2-co-1-pos-3",
+              "closed": true
             },
             {
               "rank": "O-1",
               "title": "2nd Lieutenant",
-              "status": "closed"
+              "id": "bn2-co-1-pos-4",
+              "closed": true
             },
             {
               "rank": "O-1",
               "title": "2nd Lieutenant",
-              "status": "closed"
+              "id": "bn2-co-1-pos-5",
+              "closed": true
             }
           ]
         },
@@ -178,27 +188,32 @@
             {
               "rank": "O-3",
               "title": "Captain",
-              "status": "closed"
+              "id": "bn2-co-2-pos-1",
+              "closed": true
             },
             {
               "rank": "O-1",
               "title": "2nd Lieutenant",
-              "status": "closed"
+              "id": "bn2-co-2-pos-2",
+              "closed": true
             },
             {
               "rank": "O-1",
               "title": "2nd Lieutenant",
-              "status": "closed"
+              "id": "bn2-co-2-pos-3",
+              "closed": true
             },
             {
               "rank": "O-1",
               "title": "2nd Lieutenant",
-              "status": "closed"
+              "id": "bn2-co-2-pos-4",
+              "closed": true
             },
             {
               "rank": "O-1",
               "title": "2nd Lieutenant",
-              "status": "closed"
+              "id": "bn2-co-2-pos-5",
+              "closed": true
             }
           ]
         }

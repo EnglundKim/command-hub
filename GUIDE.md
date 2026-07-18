@@ -11,8 +11,8 @@ command-hub/
 ├── src/
 │   └── worker.js                  The backend: login, sessions, admin API, page gating
 ├── public/                        Everything served to browsers
-│   ├── index.html, chain-of-command.html, login.html, setup.html,
-│   │   reset-password.html, admin.html
+│   ├── chain-of-command.html, activity-report.html, server-stats.html,
+│   │   login.html, setup.html, reset-password.html, admin.html
 │   └── assets/                    CSS, JS, images shared by every page
 ├── db/
 │   └── schema.sql                 Database structure (officers, sessions, roster, history)

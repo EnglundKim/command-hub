@@ -13,6 +13,7 @@
 - **Database**: Cloudflare D1 (SQLite) — name `5thmr-command-hub-db`, id `c27e17f8-84c4-4f85-867d-22e342eed695`, bound as `DB`.
 - **Auth**: Custom username/password. PBKDF2 (Web Crypto, SHA-256, 100k iterations, per-user 16-byte hex salt). Opaque 32-byte session tokens in a `sessions` table, cookie `session` (`HttpOnly; Secure; SameSite=Lax`, 14-day expiry). No JWT, no libraries.
 - **Email**: Resend API (`fetch` to `https://api.resend.com/emails`), from `5th Marine Regiment Command Hub <onboarding@resend.dev>` (shared test domain — deliberate choice, user declined custom domain DNS). Secret `RESEND_API_KEY` set via wrangler.
+- **Server Stats data**: a Discord bot appends every server join/leave to a Google Sheet (raw log in cols A–C: `Date` `DD/MM/YYYY HH:MM:SS`, `User`, `Join/Leave`; cols E–I hold the user's manual daily summary, which the Worker ignores — everything is computed from the raw log). Published-as-CSV URL: `https://docs.google.com/spreadsheets/d/e/2PACX-1vQUy5ynqu6dUacmXDa-k-48MLqFbab0la0NhdQE4IYEobjYAI_5ASnO-aRTM5ZyEWbcBGQj92GJ59y5/pub?gid=1392691594&single=true&output=csv` — stored as secret `SHEET_CSV_URL` (prod: wrangler secret; local: `.dev.vars`, gitignored). The Worker fetches + parses it in `/api/server-stats` with a 5-min in-isolate cache. **Prod secret not set yet.** ~1,530 events since 21 Feb 2026.
 - **Hosting/Deploy**: Cloudflare Workers, free tier. **`git push` to `main` auto-deploys** via Cloudflare Workers Builds (GitHub repo `captaincurry-67/command-hub` connected). Live URL: `https://command-hub.5thmrcommandhub.workers.dev`
 - **Local dev**: `npx wrangler dev --local` on port 8787 (configured in `.claude/launch.json` as `command-hub-preview`). Local D1 state lives in `.wrangler/` (gitignored). The user's wrangler CLI is OAuth-logged-in as `captaincurryops@gmail.com` (account id `1a73f6294f7a66cbfb773324acc969f9`), so `--remote` D1 commands work non-interactively.
 - **Git identity** (repo-local): `captaincurry-67` / `captaincurryops@gmail.com`. Working dir: `C:\Users\rakes\Desktop\command-hub` (Windows, PowerShell + Git Bash).
@@ -34,7 +35,7 @@ binding = "DB"
 database_name = "5thmr-command-hub-db"
 database_id = "c27e17f8-84c4-4f85-867d-22e342eed695"
 ```
-**Critical gotchas already solved — do not regress**: `run_worker_first = true` is required or the Worker's auth gating never runs for static pages. `html_handling = "none"` prevents `.html`-stripping redirects that break path-based gating, but it also disables `/` → `/index.html`, which the Worker handles manually in `serveAsset()`.
+**Critical gotchas already solved — do not regress**: `run_worker_first = true` is required or the Worker's auth gating never runs for static pages. `html_handling = "none"` prevents `.html`-stripping redirects that break path-based gating; `/` never reaches `serveAsset()` — `fetch()` 302s it (and `/index.html`, and logged-in `/login.html` visits) to login or chain-of-command. There is no Home page (removed 2026-07-18 at user request).
 
 ---
 
@@ -46,17 +47,20 @@ command-hub/
 │   ├── worker.js              # Entire backend: router, auth, all /api/* handlers, page gating
 │   └── seed-hierarchy.json    # Structure-only hierarchy seed (used by /api/setup on fresh installs)
 ├── public/                    # Everything served as static assets
-│   ├── index.html             # Home (gated)
-│   ├── chain-of-command.html  # Org chart (gated)
+│   ├── chain-of-command.html  # Org chart (gated) — landing page after login; no Home page exists
+│   │                          #   "/" and "/index.html" 302 → login.html (no session) or chain-of-command.html;
+│   │                          #   a logged-in visit to login.html also 302s to chain-of-command.html
 │   ├── activity-report.html   # Weekly ratings grid (gated)
+│   ├── server-stats.html      # Discord join/leave stats (gated)
 │   ├── admin.html             # Regimental Command only (server-enforced redirect)
 │   ├── login.html / setup.html / reset-password.html   # Public (ungated)
 │   └── assets/
 │       ├── css/  variables.css, base.css, layout.css, auth.css,
-│       │         chain-of-command.css, admin.css, activity.css
+│       │         chain-of-command.css, admin.css, activity.css, server-stats.css
 │       ├── js/   api.js (fetch helper), nav.js (per-login nav: Admin link, username, Logout),
 │       │         ranks.js (RANKS/RANK_ICONS/RANK_TITLES shared), chain-of-command.js,
-│       │         login.js, setup.js, reset-password.js, admin.js, activity-report.js
+│       │         login.js, setup.js, reset-password.js, admin.js, activity-report.js,
+│       │         server-stats.js
 │       └── img/  logo.png, site-bg.jpg, ranks/*.png
 ├── db/
 │   ├── schema.sql                        # Full schema for fresh installs
@@ -98,6 +102,7 @@ Theme matches the community's main site **5thmr.org**. All colors/fonts via CSS 
 - **Activity Report** — monthly grid: rows = all assigned officers in hierarchy order, **sectioned by unit** (gold section header rows: "Regimental Command", "Battalion I", "Company II"...), row label format `Title - Name` (e.g. `Lieutenant Colonel - Yukki`), columns = that month's Mondays (only up to today), trailing **Qtr Avg** that follows the viewed month's quarter. Prev/Next month nav, Next capped at current month. Only the **current week** is editable (dropdown 0–5/LOA, color-coded); everything else read-only. **All officers see everything; only rating rights are restricted.**
 - **Admin** (Regimental Command only) — officer table (Name/Username/Email/Tier/Seat + Reassign + Remove-as-soft-deactivate), Add Officer form (display name, username, email, tier, vacant-seat dropdown; shows temp password once), and the structure-only Hierarchy editor (rank dropdown with icon preview, title, Closed checkbox; add/remove battalions/companies/positions; single Save Changes writes whole JSON). Warrant Officers/Reserves sections still use the old name+status editor (intentionally).
 - **Login / Setup / Reset-password** — setup self-disables once any officer exists; reset flow is email token → new password → invalidates all sessions.
+- **Server Stats** — visible to all logged-in officers; an analytics dashboard over the Discord join/leave log. Panels top to bottom: meta line (tracking since / events / unique users / last entry / skipped rows); 4 stat cards (Last 7 Days, Last 30 Days, All Time — each Joins green `#3aa655` / Leaves red `#e5484d` / Net gold — plus Retention: median stay, % left within 7 days, rejoined users); **daily chart** "Joins, Leaves & Intake — Last 30 Days" (grouped bars + smoothed gold `#ebae46` intake/net line + thin dashed linear trendlines per series — mirrors the user's Google Sheets chart); **weekly chart** (12 Monday-start weeks, bars only); **Member Growth** cumulative-net line with gold area fill and nearest-point hover marker; Monthly Summary table; Recent Activity table (last 25, Join/Leave badges). Leave bars are stripe-textured for colorblind safety; all charts share one tooltip div, use responsive `viewBox` SVGs (min 640px, scroll wrapper on mobile). All aggregation is server-side in `apiServerStats` (`buildServerStats`/`buildRetention` in worker.js — retention pairs each user's Join with their next Leave into "stints"). CSV parsing handles quoted fields, header-row column detection, day-first slash dates (auto-detects order when a day > 12 appears), ISO dates, and skips unreadable rows.
 
 ### Data model (all migrations already applied to local AND production)
 - `officers`: + `display_name`, `current_position_id` (seat link), `is_active` (soft delete). Login/session queries filter `is_active = 1`.
@@ -120,7 +125,7 @@ const RATE_TARGETS = {
 Weeks are computed on the fly (`mondayOf()` UTC); nothing pre-generated. Quarter = calendar quarter of the *viewed* month.
 
 ### API routes (all in src/worker.js)
-`GET /api/setup-status`, `POST /api/setup` (only when 0 officers), `POST /api/login`, `POST /api/logout`, `GET /api/me`, `GET|PUT /api/hierarchy`, `GET /api/positions` (flattened seats w/ occupancy for admin dropdowns), `GET|POST /api/officers`, `POST /api/officers/:id/assign`, `DELETE /api/officers/:id` (soft), `POST /api/request-reset`, `POST /api/reset-password`, `GET /api/activity?month=YYYY-MM`, `PUT /api/activity/rating`.
+`GET /api/setup-status`, `POST /api/setup` (only when 0 officers), `POST /api/login`, `POST /api/logout`, `GET /api/me`, `GET|PUT /api/hierarchy`, `GET /api/positions` (flattened seats w/ occupancy for admin dropdowns), `GET|POST /api/officers`, `POST /api/officers/:id/assign`, `DELETE /api/officers/:id` (soft), `POST /api/request-reset`, `POST /api/reset-password`, `GET /api/activity?month=YYYY-MM`, `PUT /api/activity/rating`, `GET /api/server-stats` (returns `{configured:false}` if `SHEET_CSV_URL` unset; otherwise pre-aggregated totals/last7/last30/daily/weekly/growth/monthly/retention/recent).
 
 ### Production data state
 8 live officer accounts, all linked to seats:
@@ -139,7 +144,7 @@ Position id scheme: `reg-pos-1..5`, `bn-1-pos-1..2`, `bn1-co-1-pos-1..5`, `bn1-c
 
 Local D1 test accounts (local only, wiped/recreated freely): `testrc / TestPass1234` (regimental), plus testbattalion/testcaptain1/testcaptain2 with temp passwords from that session — recreate as needed.
 
-Last commit: `bd5b2c7` "Activity Report: full visibility, Title - Name rows, unit sections" — deployed and verified live.
+Last commit: "Add Server Stats analytics dashboard; make login the landing page" (2026-07-18) — deployed with `SHEET_CSV_URL` prod secret set.
 
 ---
 
@@ -151,9 +156,10 @@ Last commit: `bd5b2c7` "Activity Report: full visibility, Title - Name rows, uni
 
 ## 6. Immediate Next Steps
 
-1. **User action pending — remind them**: create accounts in Admin for the 6 seats still showing OPEN on the live Chain of Command: Massa (`bn1-co-1-pos-2`), Skeletonpilot (`bn1-co-1-pos-3`), Mizer (`bn1-co-1-pos-4`), Eli (`bn1-co-2-pos-2`), x2Hello (`bn1-co-2-pos-3`), Hammad (`bn1-co-2-pos-4`).
-2. **Bulk import of historical activity ratings** — user has an Excel "Activity Sheet" (weekly 0–5/LOA ratings, weeks starting 22/6/26) and promised to send the full export. When received: map names → officer ids, week columns → Monday ISO dates, generate INSERT statements into `activity_ratings` (respect the `UNIQUE(officer_id, week_start)` constraint), apply with `npx wrangler d1 execute 5thmr-command-hub-db --remote --file=...`. Dates in their sheet are DD/M/YY.
-3. **Ideas previously suggested, not yet requested/built** (raise only if user asks for more analytics): unit-level average rollups, ↑/↓ trend indicators, "needs attention" flags for consecutive low ratings, CSV export.
+1. **Discord bot may have stopped logging**: the sheet's last entry is 10 Jul 2026 (flagged to the user 18 Jul — Server Stats "Last 7 Days" shows zeros until the bot resumes). Server Stats analytics ideas offered but not yet requested: day-of-week/hour-of-day patterns, moving average, retention curve, returning-members list, CSV export.
+2. **User action pending — remind them**: create accounts in Admin for the 6 seats still showing OPEN on the live Chain of Command: Massa (`bn1-co-1-pos-2`), Skeletonpilot (`bn1-co-1-pos-3`), Mizer (`bn1-co-1-pos-4`), Eli (`bn1-co-2-pos-2`), x2Hello (`bn1-co-2-pos-3`), Hammad (`bn1-co-2-pos-4`).
+3. **Bulk import of historical activity ratings** — user has an Excel "Activity Sheet" (weekly 0–5/LOA ratings, weeks starting 22/6/26) and promised to send the full export. When received: map names → officer ids, week columns → Monday ISO dates, generate INSERT statements into `activity_ratings` (respect the `UNIQUE(officer_id, week_start)` constraint), apply with `npx wrangler d1 execute 5thmr-command-hub-db --remote --file=...`. Dates in their sheet are DD/M/YY.
+4. **Ideas previously suggested, not yet requested/built** (raise only if user asks for more analytics): unit-level average rollups, ↑/↓ trend indicators, "needs attention" flags for consecutive low ratings, CSV export.
 
 ### Operational reference
 - Local dev: `npx wrangler d1 execute 5thmr-command-hub-db --local --file=db/schema.sql` (first time), then `npx wrangler dev --local` → http://localhost:8787.

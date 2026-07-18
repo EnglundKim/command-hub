@@ -37,6 +37,18 @@ export default {
       });
     }
 
+    // No home page: the root just routes you to the right place, and a
+    // logged-in visitor hitting the login page skips straight to the roster.
+    if (path === "/" || path === "/index.html" || path === "/login.html") {
+      const officer = await getSessionOfficer(request, env);
+      if (officer) {
+        return Response.redirect(`${url.origin}/chain-of-command.html`, 302);
+      }
+      return path === "/login.html"
+        ? serveAsset(request, env, url)
+        : Response.redirect(`${url.origin}/login.html`, 302);
+    }
+
     if (path.startsWith("/assets/") || PUBLIC_PAGES.includes(path)) {
       return serveAsset(request, env, url);
     }
@@ -55,13 +67,8 @@ export default {
 
 async function serveAsset(request, env, url) {
   // html_handling is set to "none" (so /login.html etc. don't get redirected to
-  // extensionless URLs, which would bypass our path-based gating above) — but that
-  // also disables the default "/" -> "/index.html" resolution, so do it ourselves.
-  if (url.pathname === "/") {
-    const rewritten = new URL(url);
-    rewritten.pathname = "/index.html";
-    request = new Request(rewritten.toString(), request);
-  }
+  // extensionless URLs, which would bypass our path-based gating above). "/" never
+  // reaches here — fetch() redirects it to login or chain-of-command.
   return env.ASSETS.fetch(request);
 }
 
@@ -86,6 +93,7 @@ async function handleApi(request, env, path) {
   if (path.startsWith("/api/officers/") && method === "DELETE") return apiDeleteOfficer(request, env, path);
   if (path === "/api/activity" && method === "GET") return apiGetActivity(request, env, url_(request));
   if (path === "/api/activity/rating" && method === "PUT") return apiPutActivityRating(request, env);
+  if (path === "/api/server-stats" && method === "GET") return apiServerStats(request, env);
 
   return jsonResponse({ error: "Not found" }, 404);
 }
@@ -746,4 +754,269 @@ async function parseJsonBody(request) {
 
 function jsonResponse(data, status = 200) {
   return new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json" } });
+}
+
+/* ---------------- server stats (Discord join/leave log, Google Sheet CSV) ---------------- */
+
+const SERVER_STATS_CACHE_MS = 5 * 60 * 1000;
+const SERVER_STATS_WEEKS = 12;
+// Per-isolate cache so we don't re-download the sheet on every page view.
+let serverStatsCache = { url: null, fetchedAt: 0, payload: null };
+
+async function apiServerStats(request, env) {
+  const officer = await getSessionOfficer(request, env);
+  if (!officer) return jsonResponse({ error: "Not authenticated" }, 401);
+
+  if (!env.SHEET_CSV_URL) return jsonResponse({ configured: false });
+
+  const now = Date.now();
+  if (
+    serverStatsCache.payload &&
+    serverStatsCache.url === env.SHEET_CSV_URL &&
+    now - serverStatsCache.fetchedAt < SERVER_STATS_CACHE_MS
+  ) {
+    return jsonResponse(serverStatsCache.payload);
+  }
+
+  const res = await fetch(env.SHEET_CSV_URL, { redirect: "follow" });
+  if (!res.ok) return jsonResponse({ error: "Could not fetch the stats sheet" }, 502);
+  const csv = await res.text();
+
+  const { events, skippedRows } = parseJoinLeaveCsv(csv);
+  const payload = buildServerStats(events, skippedRows);
+  serverStatsCache = { url: env.SHEET_CSV_URL, fetchedAt: now, payload };
+  return jsonResponse(payload);
+}
+
+function parseCsvRows(text) {
+  const rows = [];
+  let row = [];
+  let field = "";
+  let inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (text[i + 1] === '"') {
+          field += '"';
+          i++;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        field += ch;
+      }
+    } else if (ch === '"') {
+      inQuotes = true;
+    } else if (ch === ",") {
+      row.push(field);
+      field = "";
+    } else if (ch === "\n" || ch === "\r") {
+      if (ch === "\r" && text[i + 1] === "\n") i++;
+      row.push(field);
+      field = "";
+      rows.push(row);
+      row = [];
+    } else {
+      field += ch;
+    }
+  }
+  if (field.length || row.length) {
+    row.push(field);
+    rows.push(row);
+  }
+  return rows;
+}
+
+function parseJoinLeaveCsv(csv) {
+  const rows = parseCsvRows(csv).filter((r) => r.some((c) => c.trim() !== ""));
+  if (!rows.length) return { events: [], skippedRows: 0 };
+
+  // Columns default to Date, User, Action; a header row (if present) can reorder them.
+  let dateCol = 0;
+  let userCol = 1;
+  let actionCol = 2;
+  let start = 0;
+  const header = rows[0].map((c) => c.trim().toLowerCase());
+  if (header.some((c) => c.includes("date") || c.includes("user") || c.includes("action"))) {
+    start = 1;
+    const find = (...names) => header.findIndex((c) => names.some((n) => c.includes(n)));
+    const d = find("date", "time");
+    if (d !== -1) dateCol = d;
+    const u = find("user", "name", "member");
+    if (u !== -1) userCol = u;
+    const a = find("action", "join", "leave", "event", "type", "status");
+    if (a !== -1) actionCol = a;
+  }
+
+  const dayFirst = detectDayFirst(rows, dateCol, start);
+  const events = [];
+  let skippedRows = 0;
+  for (let i = start; i < rows.length; i++) {
+    const time = parseEventDate(rows[i][dateCol], dayFirst);
+    const user = (rows[i][userCol] || "").trim();
+    const action = normalizeAction(rows[i][actionCol]);
+    if (time === null || !action) {
+      skippedRows++;
+      continue;
+    }
+    events.push({ time, user, action });
+  }
+  events.sort((a, b) => a.time - b.time);
+  return { events, skippedRows };
+}
+
+// Slash dates are ambiguous (7/6 vs 6/7). If any row proves the order, trust it;
+// otherwise assume day-first — this unit writes dates as DD/M/YY.
+function detectDayFirst(rows, dateCol, start) {
+  for (let i = start; i < rows.length; i++) {
+    const m = (rows[i][dateCol] || "").trim().match(/^(\d{1,2})\/(\d{1,2})\//);
+    if (!m) continue;
+    if (+m[1] > 12) return true;
+    if (+m[2] > 12) return false;
+  }
+  return true;
+}
+
+function parseEventDate(raw, dayFirst) {
+  const s = (raw || "").trim();
+  let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (m) return Date.UTC(+m[1], +m[2] - 1, +m[3]);
+  m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+  if (m) {
+    let year = +m[3];
+    if (year < 100) year += 2000;
+    const day = dayFirst ? +m[1] : +m[2];
+    const month = dayFirst ? +m[2] : +m[1];
+    return Date.UTC(year, month - 1, day);
+  }
+  const t = Date.parse(s);
+  return Number.isNaN(t) ? null : t;
+}
+
+function normalizeAction(raw) {
+  const s = (raw || "").trim().toLowerCase();
+  if (s.startsWith("j")) return "join";
+  if (s.startsWith("l")) return "leave";
+  return null;
+}
+
+function buildServerStats(events, skippedRows) {
+  const counts = (list) => {
+    let joins = 0;
+    let leaves = 0;
+    for (const e of list) e.action === "join" ? joins++ : leaves++;
+    return { joins, leaves, net: joins - leaves };
+  };
+
+  const now = new Date();
+  const todayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  const dayMs = 24 * 60 * 60 * 1000;
+  const since = (days) => counts(events.filter((e) => e.time >= todayUtc - (days - 1) * dayMs));
+
+  // Daily buckets for the last 30 days (the "joins, leaves & intake" chart).
+  const daily = [];
+  for (let i = 29; i >= 0; i--) {
+    const dayStart = todayUtc - i * dayMs;
+    const inDay = events.filter((e) => e.time >= dayStart && e.time < dayStart + dayMs);
+    daily.push({ date: isoDate(new Date(dayStart)), ...counts(inDay) });
+  }
+
+  // Weekly buckets: the last 12 Monday-start weeks, current week last.
+  const thisMonday = mondayOf(now).getTime();
+  const weekly = [];
+  for (let i = SERVER_STATS_WEEKS - 1; i >= 0; i--) {
+    const weekStart = thisMonday - i * 7 * dayMs;
+    const inWeek = events.filter((e) => e.time >= weekStart && e.time < weekStart + 7 * dayMs);
+    weekly.push({ weekStart: isoDate(new Date(weekStart)), ...counts(inWeek) });
+  }
+
+  // Cumulative net members since the log began, one point per day.
+  const growth = [];
+  if (events.length) {
+    let running = 0;
+    let idx = 0;
+    for (let t = events[0].time; t <= todayUtc; t += dayMs) {
+      while (idx < events.length && events[idx].time < t + dayMs) {
+        running += events[idx].action === "join" ? 1 : -1;
+        idx++;
+      }
+      growth.push({ date: isoDate(new Date(t)), total: running });
+    }
+  }
+
+  // Per-calendar-month totals.
+  const monthMap = new Map();
+  for (const e of events) {
+    const key = isoDate(new Date(e.time)).slice(0, 7); // "YYYY-MM"
+    if (!monthMap.has(key)) monthMap.set(key, { joins: 0, leaves: 0 });
+    const m = monthMap.get(key);
+    e.action === "join" ? m.joins++ : m.leaves++;
+  }
+  const monthly = [...monthMap.entries()]
+    .sort((a, b) => (a[0] < b[0] ? -1 : 1))
+    .map(([month, m]) => ({ month, joins: m.joins, leaves: m.leaves, net: m.joins - m.leaves }));
+
+  const retention = buildRetention(events, dayMs);
+
+  const recent = events
+    .slice(-25)
+    .reverse()
+    .map((e) => ({ date: isoDate(new Date(e.time)), user: e.user, action: e.action }));
+
+  return {
+    configured: true,
+    totals: counts(events),
+    last7: since(7),
+    last30: since(30),
+    daily,
+    weekly,
+    growth,
+    monthly,
+    retention,
+    recent,
+    totalEvents: events.length,
+    skippedRows,
+    firstDate: events.length ? isoDate(new Date(events[0].time)) : null,
+    lastDate: events.length ? isoDate(new Date(events[events.length - 1].time)) : null,
+  };
+}
+
+// Pairs each user's Join with their next Leave (a "stint") to measure how long
+// people stay. Leaves with no prior Join (joined before the log began) are ignored.
+function buildRetention(events, dayMs) {
+  const byUser = new Map();
+  for (const e of events) {
+    if (!byUser.has(e.user)) byUser.set(e.user, []);
+    byUser.get(e.user).push(e);
+  }
+
+  let uniqueJoiners = 0;
+  let rejoiners = 0;
+  let openStints = 0;
+  const stayDays = [];
+  for (const list of byUser.values()) {
+    let joinCount = 0;
+    let openJoin = null;
+    for (const e of list) {
+      if (e.action === "join") {
+        joinCount++;
+        openJoin = e.time; // a repeated Join just restarts the stint
+      } else if (openJoin !== null) {
+        stayDays.push(Math.round((e.time - openJoin) / dayMs));
+        openJoin = null;
+      }
+    }
+    if (joinCount > 0) uniqueJoiners++;
+    if (joinCount > 1) rejoiners++;
+    if (openJoin !== null) openStints++;
+  }
+
+  stayDays.sort((a, b) => a - b);
+  const medianStayDays = stayDays.length ? stayDays[Math.floor(stayDays.length / 2)] : null;
+  const quickQuitPct = stayDays.length
+    ? Math.round((stayDays.filter((d) => d <= 7).length / stayDays.length) * 100)
+    : null;
+
+  return { uniqueJoiners, rejoiners, openStints, completedStints: stayDays.length, medianStayDays, quickQuitPct };
 }

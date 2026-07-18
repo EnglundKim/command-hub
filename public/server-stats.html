@@ -3,10 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>5th Marine Regiment Command Hub</title>
+  <title>Server Stats | 5th Marine Regiment Command Hub</title>
   <link rel="stylesheet" href="assets/css/variables.css" />
   <link rel="stylesheet" href="assets/css/base.css" />
   <link rel="stylesheet" href="assets/css/layout.css" />
+  <link rel="stylesheet" href="assets/css/server-stats.css" />
 </head>
 <body>
   <header class="site-header">
@@ -16,24 +17,17 @@
     </div>
     <nav>
       <ul class="site-nav">
-        <li><a href="index.html" aria-current="page">Home</a></li>
         <li><a href="chain-of-command.html">Chain of Command</a></li>
         <li><a href="activity-report.html">Activity Report</a></li>
+        <li><a href="server-stats.html" aria-current="page">Server Stats</a></li>
       </ul>
     </nav>
   </header>
 
-  <main class="page-shell" style="text-align: center;">
-    <h1 class="page-title">5th Marine Regiment Command Hub</h1>
-    <p style="color: var(--color-text-muted); max-width: 560px; margin: 0 auto var(--space-6);">
-      Home of the 5th Marine Discord mil-sim community. More pages are on the way &mdash;
-      start with the roster below.
-    </p>
-    <p>
-      <a href="chain-of-command.html" style="font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-gold-bright); border: 1px solid var(--color-gold); padding: var(--space-3) var(--space-5); border-radius: var(--radius);">
-        View Chain of Command
-      </a>
-    </p>
+  <main class="page-shell">
+    <h1 class="page-title">Server Stats</h1>
+
+    <div id="stats-root">Loading&hellip;</div>
   </main>
 
   <footer class="site-footer">
@@ -42,5 +36,6 @@
 
   <script src="assets/js/api.js"></script>
   <script src="assets/js/nav.js"></script>
+  <script src="assets/js/server-stats.js"></script>
 </body>
 </html>

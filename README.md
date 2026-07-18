@@ -5,8 +5,9 @@ Website for the 5th Marine Discord mil-sim community. Cloudflare Worker + D1 dat
 **New here?** See [GUIDE.md](GUIDE.md) for a full beginner walkthrough: local dev, deployment, and using the Admin panel.
 
 ## Pages
-- `public/index.html` — home page
-- `public/chain-of-command.html` — Regiment → Battalion → Company org chart, plus standalone Warrant Officer and Reserves rosters. Data comes from Cloudflare D1 via `/api/hierarchy`.
+- `public/chain-of-command.html` — Regiment → Battalion → Company org chart, plus standalone Warrant Officer and Reserves rosters. Data comes from Cloudflare D1 via `/api/hierarchy`. This is the landing page after login; the site root `/` redirects here (or to login if signed out).
+- `public/activity-report.html` — weekly officer activity ratings
+- `public/server-stats.html` — Discord join/leave analytics
 - `public/login.html`, `public/setup.html`, `public/reset-password.html` — officer authentication
 - `public/admin.html` — Regimental Command only: manage officer accounts and edit the chain of command
 

@@ -14,3 +14,6 @@ Thumbs.db
 # Wrangler local dev state (local D1 sqlite, etc.)
 .wrangler/
 node_modules/
+
+# Local-only environment variables for wrangler dev (SHEET_CSV_URL, etc.)
+.dev.vars

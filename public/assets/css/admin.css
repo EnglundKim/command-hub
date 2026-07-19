@@ -202,6 +202,16 @@
   min-width: 140px;
 }
 
+/* Read-only occupant display on structure rows (assignment happens in Officers section) */
+.editor-row input.editor-occupant {
+  flex: 1;
+  min-width: 140px;
+}
+
+.editor-row input.editor-occupant--empty {
+  color: var(--color-text-muted);
+}
+
 .editor-companies {
   margin-left: var(--space-5);
   padding-left: var(--space-4);

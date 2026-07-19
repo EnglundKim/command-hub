@@ -142,7 +142,9 @@ function renderRow(row) {
 
 function renderReadonlyCell(value) {
   if (!value) return el("span", { class: "activity-cell activity-cell--empty", text: "—" });
-  const badge = el("span", { class: "activity-cell", text: value });
+  // Same "5 — Exemplary" form as the editable dropdowns, so every cell reads alike.
+  const label = value === "LOA" ? "LOA" : `${value} — ${RATING_LABELS[value]}`;
+  const badge = el("span", { class: "activity-cell", text: label });
   badge.style.backgroundColor = RATING_COLORS[value];
   return badge;
 }

@@ -90,6 +90,9 @@ async function handleApi(request, env, path) {
   if (path.startsWith("/api/officers/") && path.endsWith("/assign") && method === "POST") {
     return apiAssignOfficer(request, env, path.split("/")[3]);
   }
+  if (path.startsWith("/api/officers/") && path.endsWith("/reserve") && method === "POST") {
+    return apiReserveOfficer(request, env, path.split("/")[3]);
+  }
   if (path.startsWith("/api/officers/") && method === "DELETE") return apiDeleteOfficer(request, env, path);
   if (path === "/api/activity" && method === "GET") return apiGetActivity(request, env, url_(request));
   if (path === "/api/activity/rating" && method === "PUT") return apiPutActivityRating(request, env);
@@ -362,15 +365,60 @@ async function apiAssignOfficer(request, env, officerId) {
   if (officer.tier !== "regimental_command") return jsonResponse({ error: "Forbidden" }, 403);
 
   const body = await parseJsonBody(request);
-  if (!body || !body.positionId) return jsonResponse({ error: "A positionId is required" }, 400);
+  if (!body) return jsonResponse({ error: "Invalid request body" }, 400);
 
-  const conflict = await env.DB
-    .prepare("SELECT id FROM officers WHERE current_position_id = ? AND is_active = 1 AND id != ?")
-    .bind(body.positionId, officerId)
+  // A null positionId unseats the officer ("— No seat —" in the Reassign dropdown).
+  if (body.positionId) {
+    const conflict = await env.DB
+      .prepare("SELECT id FROM officers WHERE current_position_id = ? AND is_active = 1 AND id != ?")
+      .bind(body.positionId, officerId)
+      .first();
+    if (conflict) return jsonResponse({ error: "That seat is already occupied" }, 409);
+  }
+
+  await env.DB
+    .prepare("UPDATE officers SET current_position_id = ? WHERE id = ?")
+    .bind(body.positionId || null, officerId)
+    .run();
+  return jsonResponse({ ok: true });
+}
+
+// Moves an officer off their seat and onto the Reserves list (login stays active).
+// The Reserves entry carries their current rank; corrections happen in the editor.
+async function apiReserveOfficer(request, env, officerId) {
+  const officer = await getSessionOfficer(request, env);
+  if (!officer) return jsonResponse({ error: "Not authenticated" }, 401);
+  if (officer.tier !== "regimental_command") return jsonResponse({ error: "Forbidden" }, 403);
+
+  const target = await env.DB
+    .prepare("SELECT id, display_name, username, current_position_id FROM officers WHERE id = ? AND is_active = 1")
+    .bind(officerId)
     .first();
-  if (conflict) return jsonResponse({ error: "That seat is already occupied" }, 409);
+  if (!target) return jsonResponse({ error: "Officer not found" }, 404);
 
-  await env.DB.prepare("UPDATE officers SET current_position_id = ? WHERE id = ?").bind(body.positionId, officerId).run();
+  const data = await getHierarchyData(env);
+  if (!data) return jsonResponse({ error: "Hierarchy not set up yet" }, 500);
+
+  const seat = target.current_position_id
+    ? flattenPositions(data).find((p) => p.id === target.current_position_id)
+    : null;
+  const name = target.display_name || target.username;
+
+  if (!data.reserves) data.reserves = { label: "Reserves", positions: [] };
+  if (!Array.isArray(data.reserves.positions)) data.reserves.positions = [];
+  data.reserves.positions.push({ rank: seat ? seat.rank : "", title: "", name, status: "filled" });
+
+  const dataStr = JSON.stringify(data);
+  await env.DB.batch([
+    env.DB
+      .prepare("UPDATE hierarchy SET data = ?, updated_at = datetime('now'), updated_by = ? WHERE id = 1")
+      .bind(dataStr, officer.id),
+    env.DB
+      .prepare("INSERT INTO hierarchy_history (data, changed_by, change_summary) VALUES (?, ?, ?)")
+      .bind(dataStr, officer.id, `Moved ${name} to Reserves`),
+    env.DB.prepare("UPDATE officers SET current_position_id = NULL WHERE id = ?").bind(target.id),
+  ]);
+
   return jsonResponse({ ok: true });
 }
 

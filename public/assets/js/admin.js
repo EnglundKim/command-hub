@@ -65,6 +65,11 @@ async function loadOfficers() {
             onclick: () => startReassign(row, o),
           }),
           el("button", {
+            class: "admin-btn admin-btn--small",
+            text: "To Reserves",
+            onclick: () => moveToReserves(o),
+          }),
+          el("button", {
             class: "admin-btn admin-btn--danger admin-btn--small",
             text: "Remove",
             onclick: () => removeOfficer(o.id, o.username),
@@ -106,6 +111,23 @@ function startReassign(row, officer) {
     ]),
   ]);
   row.after(tr);
+}
+
+async function moveToReserves(officer) {
+  const name = officer.display_name || officer.username;
+  if (
+    !confirm(
+      `Move "${name}" to Reserves? Their seat becomes vacant and they appear on the Reserves list (keeping their rank). They can still log in.`
+    )
+  )
+    return;
+  try {
+    await apiFetch(`/api/officers/${officer.id}/reserve`, { method: "POST" });
+    loadOfficers();
+    loadHierarchy(); // the Reserves section just gained an entry
+  } catch (err) {
+    alert(err.message);
+  }
 }
 
 async function removeOfficer(id, username) {
@@ -242,6 +264,14 @@ function renderStructurePositionsList(positions, idPrefix) {
           }),
           el("span", { text: "Closed" }),
         ]),
+        // Read-only occupant display (assignments happen in the Officers section);
+        // pos.name is enriched by GET /api/hierarchy and stripped again on save.
+        el("input", {
+          type: "text",
+          class: pos.name ? "editor-occupant" : "editor-occupant editor-occupant--empty",
+          value: pos.name || (pos.closed ? "— Closed —" : "— Vacant —"),
+          disabled: "disabled",
+        }),
         el("button", {
           class: "admin-btn admin-btn--danger admin-btn--small",
           text: "Remove",

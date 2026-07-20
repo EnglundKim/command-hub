@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Server Stats | 5th Marine Regiment Command Hub</title>
+  <title>Departments | 5th Marine Regiment Command Hub</title>
   <link rel="stylesheet" href="assets/css/variables.css" />
   <link rel="stylesheet" href="assets/css/base.css" />
   <link rel="stylesheet" href="assets/css/layout.css" />
-  <link rel="stylesheet" href="assets/css/server-stats.css" />
+  <link rel="stylesheet" href="assets/css/departments.css" />
 </head>
 <body>
   <header class="site-header">
@@ -18,9 +18,9 @@
     <nav>
       <ul class="site-nav">
         <li><a href="chain-of-command.html">Chain of Command</a></li>
-        <li><a href="departments.html">Departments</a></li>
+        <li><a href="departments.html" aria-current="page">Departments</a></li>
         <li><a href="activity-report.html">Activity Report</a></li>
-        <li><a href="server-stats.html" aria-current="page">Discord Stats</a></li>
+        <li><a href="server-stats.html">Discord Stats</a></li>
         <li><a href="https://panel.we-studios.com/panel/WSP.GDEGO7ZF1HDZWUAQURBO" target="_blank" rel="noopener">HAB</a></li>
         <li><a href="https://squadbrowser.app/servers/LICENSED-1010177">Squad Browser</a></li>
       </ul>
@@ -28,9 +28,7 @@
   </header>
 
   <main class="page-shell">
-    <h1 class="page-title">Discord Stats</h1>
-
-    <div id="stats-root">Loading&hellip;</div>
+    <div id="departments-root"></div>
   </main>
 
   <footer class="site-footer">
@@ -39,6 +37,6 @@
 
   <script src="assets/js/api.js"></script>
   <script src="assets/js/nav.js"></script>
-  <script src="assets/js/server-stats.js"></script>
+  <script src="assets/js/departments.js"></script>
 </body>
 </html>

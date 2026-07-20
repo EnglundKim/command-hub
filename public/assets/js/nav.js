@@ -11,6 +11,15 @@
     return; // not logged in — leave nav as-is (shouldn't normally happen, page is server-gated)
   }
 
+  const departmentsLink = document.createElement("li");
+  const departmentsAnchor = document.createElement("a");
+  departmentsAnchor.href = "departments.html";
+  departmentsAnchor.textContent = "Departments";
+  departmentsAnchor.dataset.nav = "departments";
+  if (location.pathname.endsWith("departments.html")) departmentsAnchor.setAttribute("aria-current", "page");
+  departmentsLink.appendChild(departmentsAnchor);
+  nav.appendChild(departmentsLink);
+
   if (me.tier === "regimental_command" && !nav.querySelector('[data-nav="admin"]')) {
     const li = document.createElement("li");
     const a = document.createElement("a");

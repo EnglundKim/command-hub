@@ -43,6 +43,17 @@ const DEFAULT_CATEGORY_MAP = Object.fromEntries(
 
 const STORAGE_KEY = "command-hub-departments";
 
+const FALLBACK_OFFICER_NAMES = [
+  "Curry",
+  "Hombrger",
+  "Kenobi",
+  "Connie",
+  "Yukki",
+  "SpaceBall",
+  "Alex",
+  "Gatto"
+];
+
 const DEFAULT_STATE = {
   departments: structuredClone(DEPARTMENT_DEFAULTS),
   categoryMap: structuredClone(DEFAULT_CATEGORY_MAP)
@@ -208,14 +219,31 @@ function createDepartmentCard(name, members, onAdd, onEditMember, onRemoveMember
   return card;
 }
 
+async function loadOfficerNames() {
+  try {
+    const data = await apiFetch("/api/officers");
+    const officers = Array.isArray(data?.officers) ? data.officers : [];
+    const names = officers
+      .map((officer) => String(officer.display_name || officer.username || "").trim())
+      .filter(Boolean);
+    if (names.length > 0) return names;
+  } catch (err) {
+    console.error("Could not load officer roster", err);
+  }
+
+  return FALLBACK_OFFICER_NAMES;
+}
+
 function createMemberModal(departmentName, initialMember, onSubmit) {
   const backdrop = el("div", { class: "dept-modal-backdrop" }, [
     el("div", { class: "dept-modal" }, [
       el("h3", { text: initialMember ? `Edit member in ${departmentName}` : `Add member to ${departmentName}` }),
       el("form", { class: "dept-form" }, [
         el("div", { class: "dept-field" }, [
-          el("label", { for: "dept-member-name", text: "Name" }),
-          el("input", { id: "dept-member-name", name: "name", type: "text", required: true, value: initialMember?.name || "" })
+          el("label", { for: "dept-member-name", text: "Officer" }),
+          el("select", { id: "dept-member-name", name: "name", required: true }, [
+            el("option", { value: "", text: "Loading officers..." })
+          ])
         ]),
         el("div", { class: "dept-field" }, [
           el("label", { for: "dept-member-rank", text: "Rank" }),
@@ -236,17 +264,38 @@ function createMemberModal(departmentName, initialMember, onSubmit) {
   const form = backdrop.querySelector(".dept-form");
   const cancel = backdrop.querySelector("button[type='button']");
   const rankSelect = backdrop.querySelector("select[name='rank']");
+  const nameSelect = backdrop.querySelector("select[name='name']");
   if (rankSelect && initialMember?.rank) {
     rankSelect.value = initialMember.rank;
   }
   cancel.addEventListener("click", () => backdrop.remove());
+
+  loadOfficerNames().then((officerNames) => {
+    if (!nameSelect) return;
+    const uniqueNames = officerNames.filter((name, index, list) => list.indexOf(name) === index);
+    const options = uniqueNames.map((name) => el("option", { value: name, text: name }));
+    const selectedName = initialMember?.name || "";
+    const currentValue = uniqueNames.includes(selectedName) ? selectedName : selectedName || "";
+
+    nameSelect.replaceChildren(
+      el("option", { value: "", text: "Select officer" }),
+      ...options,
+      ...(selectedName && !uniqueNames.includes(selectedName)
+        ? [el("option", { value: selectedName, text: `${selectedName} (current value)` })]
+        : [])
+    );
+
+    if (currentValue) {
+      nameSelect.value = currentValue;
+    }
+  });
 
   form.addEventListener("submit", (event) => {
     event.preventDefault();
     const formData = new FormData(form);
     const member = {
       name: String(formData.get("name") || "").trim(),
-      rank: String(formData.get("rank") || "Member").trim() || "Member"
+      rank: String(formData.get("rank") || "DEPARTMENT CO").trim() || "DEPARTMENT CO"
     };
     if (!member.name) return;
     onSubmit(member);
